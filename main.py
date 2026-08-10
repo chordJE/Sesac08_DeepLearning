@@ -163,7 +163,7 @@ if __name__ == '__main__':
 
     #에포크마다 train_one_epoch랑 eval 함수를 돌리면 됨!
     #오차함수, 최적화함수, 히스토리 딕셔너리 추가, 에포크 정해주기
-    EPOCHS = 1
+    EPOCHS = 100
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters())
     history = {'train_loss':[], 'train_acc':[], 'valid_loss':[], 
