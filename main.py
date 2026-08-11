@@ -1,214 +1,144 @@
-#모델 Zoo : https://docs.pytorch.org/serve/model_zoo.html
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
+#라벨만들기 위한 os, json
+import os, json 
 import matplotlib.pyplot as plt 
-
-from torchvision import datasets, models, transforms 
-from torch.utils.data import DataLoader, Dataset, random_split 
-
-from torchvision.models import vgg11, VGG11_Weights
-
-import os 
-from PIL import Image
+import cv2 
+import re
 
 
-#데이터셋 준비!
-#커스텀데이터셋 클래스 정의
-#커스텀 데이터 클래스 -> init, len, getitem이 반드시 존재
-class DriveDataset(Dataset):
-    def __init__(self, root_dir, transforms = None):
-        self.image_root = root_dir
-        self.labels = []
-        self.image_path = []
-        self.transform = transforms
+#json파일 기준으로 라벨 추출
+def label_from_json(data_list):
+    # i=> 한 개의 라벨
+    #'Code Name': 'A220120XX_10337.jpg' -> .을 기준으로 나눠서 앞부분 가져옴 -> A220120XX_10337
+    filename = data_list['Code Name']
 
-        #폴더 이름 기반의 라벨 인덱스 매핑
-        self.classes = sorted(os.listdir(root_dir))
-        self.class_to_idx = {cls:i for i, cls in
-                             enumerate(self.classes)}
-        print(self.class_to_idx)
+    #너비, 높이 추출
+    w = data_list['W']
+    h = data_list['H']
 
-        #400장의 이미지를 저장
-        valid_extensions = ('.jpg', '.jpeg', '.png')
-        for cls in self.classes:
-            cls_dir = os.path.join(root_dir, cls)
-            for file_name in os.listdir(cls_dir):
-                if file_name.lower().endswith(valid_extensions):
-                    image_path = os.path.join(cls_dir, file_name)
-                    self.image_path.append(image_path)
-                    self.labels.append(self.class_to_idx[cls])
-        print(f'{self.image_path[0]}의 라벨 {self.labels[0]}')
+    #x, y 센터 포인트
+    x, y = data_list['Point(x,y)'].split(',')
 
-    def __len__(self):
-        return len(self.image_path)
+    w = float(w)
+    h = float(h)
+    x = float(x)
+    y = float(y)
 
-    def __getitem__(self, index):
-        # 이미지 불러오기 (RGB 3채널 변환)
-        img_path = self.image_path[index]
-        #신경망 이미지를 넣는다 -> 이미지 픽셀 값을 넣어줌
-        #get_item함수가 '경로'에 있는 이미지를 읽고(cv, pillow)
-        #이미지 -> 픽셀값으로 변환하고, 이 값을 return
-        image = Image.open(img_path).convert('RGB')
-        label = self.labels[index]
+    #print(f'{filename}에서 추출된 대상 : {x}, {y}, {w}, {h}')
+    return x, y, w, h, filename
 
-        #이미지를 돌려줄 때, resize, crop, gray
-        if self.transform:
-            image = self.transform(image)
+#txt파일 기준으로 라벨 추출
+def label_from_txt(sample_path):
+    with open(sample_path, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        words = []
 
-        #개별 이미지-라벨의 쌍 / 전체 이미지 리스트[index]
-        return image, label
+        # ['Code', 'Name', 'A220120XX10306.jpg']
+        # ['Pointxy', '0.317078189300412, 0.479356405585914']
+        # ['W', '0.633333333333333'], ['H', '0.957498482088646']
+        for line in lines :
+            #공백제거
+            parts = line.strip().split()
+            words.append([re.sub(r'[^a-zA-Z0-9.,]', '', x) for x in parts])
 
-    def hello(self):
-        print('데이터셋 안녕')
+        Width, Height = 0, 0
+        point_x, point_y = 0, 0
+        path=''
+        for w in words:
+            if 'W' in w:
+                Width = w[1]
 
+            if 'H' in w:
+                Height = w[1]
 
-def get_dataloader():
-    #경로
-    root_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\cifar10_samples'
+            if 'Pointx,y' in w:
+                point_x, point_y = w[1].split(',')[0], w[1].split(',')[1]
 
-    trans = transforms.Compose([
-    transforms.ToTensor(), #텐서로 바꾸기,
-    transforms.Normalize((0.5),(0.5)) #이미지 정규화하기,
-        ])
+            if 'Code' in w:
+                path = w[2]
 
-    Data = DriveDataset(root_dir=root_dir, transforms=trans)
-
-    train_size = int( len(Data) * 0.7 )
-    valid_size = len(Data) - train_size
-
-    train, valid = random_split(Data, [train_size, valid_size])
+        print(Width, Height, point_x, point_y, path)
 
 
-    train_loader = DataLoader(train, batch_size=4, shuffle=True)
-    valid_loader = DataLoader(valid, batch_size=4)
-    return train_loader, valid_loader 
+def create_yolo_label():
+    #label_folder 정해놓은 '루트 폴더' 안에 있는 모든 파일
+    # 루트폴더 + 파일 1
+    # 루트폴더 + 파일 2...
+    # x for x in os.listdir(label_folder)
+    # os.path.join(a, b) -> a와 b경로를 합쳐서 하나의 경로 변환
+    # json_list = [os.path.join(label_folder, x) 
+    #              for x in os.listdir(label_folder) if 'json' in x]
+    # print(json_list)
 
-def get_model():
-    model = vgg11(weights=VGG11_Weights.DEFAULT)
+    json_list = []
+    for i in os.listdir(label_folder):
+        path = os.path.join(label_folder, i)
+        json_list.append(path)
 
-    #모델의 기억을 일부 동결, 일부 학습용으로 비워놓음
-    #features 파트 가중치는 '학습 불가' 동결, 
-    #classifier만 수정
-    for params in model.parameters():
-        #전체 가중치에 대해 동결
-        params.requires_grad = False 
+    for i in range(len(json_list)):
+        #json_list[i] -> i번째의 .json 파일
+        with open(json_list[i], 'r', encoding='utf-8') as f:
+            data_list = json.load(f)
 
-    #분류기(classifier)만 동결 해제
-    for params in model.classifier.parameters():
-        params.requires_grad = True
-    return model 
+            lines = []
+            #data -> 한 개의 json파일 안에 있는 한 개의 라벨 
+            for data in data_list:
+                #하나의 라벨 덩어리에서 x, y, w, h, filename을 추출!
+                x, y, w, h, filename = label_from_json(data)
 
-#훈련 함수
-def train_one_epoch(model, loader, criterion, optimizer, device):
-    model.train()
-    total_loss, correct, total = 0, 0, 0
-
-    for images, labels in loader:
-        images, labels = images.to(device), labels.to(device)
-
-        optimizer.zero_grad()
-        outputs = model(images)
-
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-        _, pred = torch.max(outputs, dim=1)
-        correct += (pred == labels).sum().item()
-        total += labels.size(0)
-
-        #평균 loss, 맞춘 비율 %
-        return total_loss/len(loader), correct/total * 100
+                #txt 파일로 변환!
+                lines.append(f'0    {x}    {y}    {w}    {h}\n')
 
 
-#검증 함수
-#@ 데코레이터 -> 함수의 역할 특정 / @classmethod, @staticmethod
-@torch.no_grad()
-def evaluate(model, loader, criterion, optimizer, device):
-    model.eval()
-    total_loss, correct, total = 0, 0, 0
 
-    for images, labels in loader:
-        images, labels = images.to(device), labels.to(device)
+            out_path = os.path.join(label_folder, 'yolo_txt_label')
+            # '경로' 가 없을때-> os.mkdir(경로) 만들어줘! 
+            if not os.path.exists(out_path):
+                os.mkdir(out_path)
 
-        outputs = model(images)
-        loss = criterion(outputs, labels)
+            #'./Data/PeachDataset/peach_label/yolo_txt_label/파일네임.txt'
+            #file_path = filename+'.txt'
+            #txt_path = os.path.join(out_path, file_path)
+            txt_path = f'{out_path}/{filename}.txt'
+            print(txt_path)
 
-        total_loss += loss.item()
-        _, pred = torch.max(outputs, dim=1)
-        correct += (pred == labels).sum().item()
-        total += labels.size(0)
-
-        #평균 loss, 맞춘 비율 %
-        return total_loss/len(loader), correct/total * 100
-
+            #'파일이름'으로 lines 리스트를 txt파일로 저장
+            with open(txt_path, 'w', encoding='utf-8') as f:
+                f.writelines(lines)
 
 
 if __name__ == '__main__':
+    #json파일에서 '특정한 키워드'를 추출해서 가져오고 싶다.
+    # image_folder = r'./Data/PeachDataset/peach_image'
+    # label_folder = r'./Data/PeachDataset/peach_label'
 
+    #같은 일련번호를 가진 복숭아 사진-라벨 가져올것!
+    image_file = r'./Data/PeachDataset/peach_image/train/A220120XX_10317.jpg'
+    txt_file = r'./Data/PeachDataset/peach_label/yolo_txt_label/A220120XX_10317.jpg.txt'
 
+    image = cv2.imread(image_file)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image_h, image_w = image.shape[:2]
 
-    #get_dataloader = 데이터를 로딩하는 함수 
-    train_loader, valid_loader = get_dataloader()
+    with open(txt_file, 'r', encoding='utf-8') as f:
+        for l in f:
+            label, cx, cy, w, h = l.strip().split()
+            cx, cy, w, h = float(cx), float(cy), float(w), float(h)
+            x1 = int((cx - (w/2)) * image_w)
+            y1 = int((cy - (h/2)) * image_h)
+            x2 = int((cx + (w/2)) * image_w)
+            y2 = int((cy + (h/2)) * image_h)
 
-    #vgg11모델과 가중치를 로딩하는 함수
-    model = get_model()
+            cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 3)
 
-    #꼭 해야 할 것 -> GPU를 쓰기 위해!
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-
-    #에포크마다 train_one_epoch랑 eval 함수를 돌리면 됨!
-    #오차함수, 최적화함수, 히스토리 딕셔너리 추가, 에포크 정해주기
-    EPOCHS = 100
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters())
-    history = {'train_loss':[], 'train_acc':[], 'valid_loss':[], 
-                'valid_acc':[]}
-    best_acc = 0.0
+    plt.imshow(image)
+    plt.show()
             
-    for e in range(EPOCHS):
-        #평균 loss, 맞춘 비율 %
-        #model, loader, criterion, optimizer, device
-        train_loss, train_acc = train_one_epoch(model, 
-                                                train_loader,
-                                                criterion=criterion,
-                                                optimizer=optimizer,
-                                                device=device)
-        valid_loss, valid_acc = evaluate(model, 
-                                                valid_loader,
-                                                criterion=criterion,
-                                                optimizer=optimizer,
-                                                device=device)
-        history['train_loss'].append(train_loss)
-        history['train_acc'].append(train_acc)
-        history['valid_loss'].append(valid_loss)
-        history['valid_acc'].append(valid_acc)
 
-        if valid_acc > best_acc :
-            best_acc = valid_acc
-            save_path = f'./CIFAR10_VGG11_{e+1}epoch_{valid_acc:.2f}.pth' 
-            torch.save(model.state_dict(), save_path)
-
-            print(f'최고 기록 ! {e+1}회 에포크 --> {valid_acc:.2f}')
-
-    #return history, best_acc
-
-
-
-
-
-    
-
-
-
-
-
-#전처리
-#데이터셋로드
-#훈련(def train)
-#검증(def evaluate)
-#시각화
+#딥러닝 시퀀스
+#1.데이터 가져옴
+#2.데이터 정제(preprocessing)
+#3.알고리즘선택
+#4.훈련
+#5.검증
+#6.평가
+#7.배포

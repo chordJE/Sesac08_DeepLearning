@@ -1,0 +1,42 @@
+[
+  {
+    "Code Name": "A220120XX_10309.jpg",
+    "Name": "peach",
+    "W": "0.424279835390946",
+    "H": "0.673872760963558",
+    "File Format": "jpg",
+    "Cat 1": "22",
+    "Cat 2": "01",
+    "Cat 3": "20",
+    "Cat 4": "xx",
+    "Annotation Type": "binding",
+    "Point(x,y)": "0.720781893004115,0.528412600370599",
+    "Label": "0",
+    "Serving Size": "xx",
+    "Camera Angle": "xx",
+    "Cardinal Angle": "xx",
+    "Color of Container": "xx",
+    "Material of Container": "xx",
+    "Illuminance": "xx"
+  },
+  {
+    "Code Name": "A220120XX_10309.jpg",
+    "Name": "peach",
+    "W": "0.435802469135802",
+    "H": "0.717109326744904",
+    "File Format": "jpg",
+    "Cat 1": "22",
+    "Cat 2": "01",
+    "Cat 3": "20",
+    "Cat 4": "xx",
+    "Annotation Type": "binding",
+    "Point(x,y)": "0.313374485596708,0.624768375540457",
+    "Label": "0",
+    "Serving Size": "xx",
+    "Camera Angle": "xx",
+    "Cardinal Angle": "xx",
+    "Color of Container": "xx",
+    "Material of Container": "xx",
+    "Illuminance": "xx"
+  }
+]

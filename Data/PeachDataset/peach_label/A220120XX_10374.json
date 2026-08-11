@@ -1,0 +1,42 @@
+[
+  {
+    "Code Name": "A220120XX_10374.jpg",
+    "Name": "bogsung-a",
+    "W": "0.702057613168724",
+    "H": "0.708415841584158",
+    "File Format": "jpg",
+    "Cat 1": "22",
+    "Cat 2": "01",
+    "Cat 3": "20",
+    "Cat 4": "xx",
+    "Annotation Type": "binding",
+    "Point(x,y)": "0.353086419753086,0.598762376237624",
+    "Label": "0",
+    "Serving Size": "xx",
+    "Camera Angle": "xx",
+    "Cardinal Angle": "xx",
+    "Color of Container": "xx",
+    "Material of Container": "xx",
+    "Illuminance": "xx"
+  },
+  {
+    "Code Name": "A220120XX_10374.jpg",
+    "Name": "bogsung-a",
+    "W": "0.589300411522634",
+    "H": "0.735148514851485",
+    "File Format": "jpg",
+    "Cat 1": "22",
+    "Cat 2": "01",
+    "Cat 3": "20",
+    "Cat 4": "xx",
+    "Annotation Type": "binding",
+    "Point(x,y)": "0.690123456790123,0.438366336633663",
+    "Label": "0",
+    "Serving Size": "xx",
+    "Camera Angle": "xx",
+    "Cardinal Angle": "xx",
+    "Color of Container": "xx",
+    "Material of Container": "xx",
+    "Illuminance": "xx"
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "Code Name": "A220120XX_10320.jpg",
+    "Name": "peach",
+    "W": "0.282304526748971",
+    "H": "0.312637362637363",
+    "File Format": "jpg",
+    "Cat 1": "22",
+    "Cat 2": "01",
+    "Cat 3": "20",
+    "Cat 4": "xx",
+    "Annotation Type": "binding",
+    "Point(x,y)": "0.229218106995885,0.748626373626374",
+    "Label": "0",
+    "Serving Size": "xx",
+    "Camera Angle": "xx",
+    "Cardinal Angle": "xx",
+    "Color of Container": "xx",
+    "Material of Container": "xx",
+    "Illuminance": "xx"
+  }
+]
