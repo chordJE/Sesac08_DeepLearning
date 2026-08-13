@@ -12,39 +12,35 @@ import shutil #.sh / .bash
 from Utils import augmentation as aug
 import albumentations as A
 
+from torchvision.models.detection import fasterrcnn_resnet50_fpn, FasterRCNN_ResNet50_FPN_Weights
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+
+def count_params(model):
+    #requires_grad = True (훈련시킬것, 변경가능) = Fasle(훈련안시킴, 변경불가)
+    #p.numel(파라미터의 구성요소 개수)
+    total     = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f'전체 파라미터    : {total:,}')
+    print(f'훈련 가능 파라미터: {trainable:,}')
+    print(f'동결된 파라미터  : {total - trainable:,}')
+
 if __name__ == '__main__':
-    #실행 연습
-    # fig, ax = plt.subplots(1, 2)
-    # #image = cv2.flip(image, 1)
-    # image = r'./Data/YoloAugmentation/images/train/A220120XX_10306.jpg'
-    # image = cv2.imread(image)
-    # print(image.shape)
-    # ax[0].imshow(image)
-    # image, label = aug.flip_horizontal(image, None)
-    # ax[1].imshow(image)
-    # plt.show()
-    # print(label)
+    model = fasterrcnn_resnet50_fpn(weights=FasterRCNN_ResNet50_FPN_Weights.DEFAULT)
 
-    transform = A.Compose([
-        A.RandomCrop(width=256, height=256),
-        A.HorizontalFlip(p=0.5),
-        A.RandomBrightnessContrast(p=0.2),
-    ])
+    #Faster RCNN
+    #Backbone => 이미지의 특징 추출 => 저수준의 특징 추출(ResNet)
+    #RPN(Resion Proposal Networks) => Bounding Box의 후보 제안 
+    #ROI Head => RPN 를 본 뒤, 분류 수행, bbox 보정**
+    #Faster RCNN : 클래스 = 분류하고자 하는 객체의 개수
+    #ROI Head를 변경
+    #print(model)
 
-    image = r'./Data/YoloAugmentation/images/train/A220120XX_10307.jpg'
-            
-    # Read an image with OpenCV and convert it to the RGB colorspace
-    image = cv2.imread(image)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    in_features = model.roi_heads.box_predictor.cls_score.in_features
+    #ROI Head도 2개의 부속품이 있음 -> Cls_score(분류) / BBox_predictor(바운딩박스 찾기)
+    model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes=1+1)
 
-    # Augment an image
-    transformed = transform(image=image)
-    transformed_image = transformed["image"]
+    count_params(model)
 
-    plt.imshow(transformed_image)
-    plt.show()
-
-    # aug.pipe_augmentation()
 
 
 
