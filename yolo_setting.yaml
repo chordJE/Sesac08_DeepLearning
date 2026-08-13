@@ -1,0 +1,6 @@
+path : C:\Users\jeong\OneDrive\Desktop\Lecture\Data\PeachDataset\YoloDataset
+train : images/train
+val : images/valid
+
+names:
+  0 : peach

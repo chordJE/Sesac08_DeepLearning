@@ -1,2 +1,5 @@
 *.pth
 *.jpg
+*.zip
+*.json
+Data/
