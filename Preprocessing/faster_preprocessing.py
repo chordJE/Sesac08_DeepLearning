@@ -35,9 +35,12 @@ NUTS_CLASS_NAMES = {v: k_name for k_name, v in {
 class NutDataset(Dataset):
     #데이터셋을 만들 때 필요한 핵심 정보 : 이미지, 라벨 폴더의 경로 / 트랜스폼
     #transforms=None / transforms 값을 주지 않았을 때는 None이 디폴트
-    def __init__(self, image_dir, label_dir, transforms=None):
+    def __init__(self, image_dir, label_dir):
         self.image_dir = image_dir
-        self.transform = transforms
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
         self.label_dir = label_dir
    
         self.samples = [] 
@@ -122,7 +125,7 @@ class NutDataset(Dataset):
 
 #image와 label폴더 위치를 주면 일정 비율로 쪼개서 train_image, train_label, valid_image, valid_label
 def copy_split_files(file_list, image_dir, label_dir, out_image_dir, out_label_dir):
-    print(str(out_image_dir), str(out_label_dir))
+    #print(str(out_image_dir), str(out_label_dir))
     os.mkdir(str(out_image_dir))
     os.mkdir(str(out_label_dir))
 
@@ -131,13 +134,13 @@ def copy_split_files(file_list, image_dir, label_dir, out_image_dir, out_label_d
 
         src_img = os.path.join(image_dir, filename)
         if os.path.exists(src_img):
-            #shutil.copy2(src_img, os.path.join(out_image_dir, filename))
-            print(f'{src_img}를 {os.path.join(out_image_dir, filename)}로')
+            shutil.copy2(src_img, os.path.join(out_image_dir, filename))
+            #print(f'{src_img}를 {os.path.join(out_image_dir, filename)}로')
 
         src_lab = os.path.join(label_dir, f)
         if os.path.exists(src_lab):
-            #shutil.copy2(src_lab, os.path.join(out_label_dir, f))
-            print(f'{src_lab}를 {os.path.join(out_label_dir, f)}로')
+            shutil.copy2(src_lab, os.path.join(out_label_dir, f))
+            #print(f'{src_lab}를 {os.path.join(out_label_dir, f)}로')
 
 
 #Train, Valid => 각 폴더에 맞게 copy_split_files 를 수행!
@@ -167,7 +170,7 @@ def get_nuts_dataloader(image_dir, label_dir):
     train_files, valid_files = split_json_files(label_dir, ratio=0.8, seed=42)
 
     copy_split_files(train_files, image_dir, label_dir, train_image, train_label)
-    copy_split_files(valid_files, image_dir, label_dir, valid_image, valid_files)
+    copy_split_files(valid_files, image_dir, label_dir, valid_image, valid_label)
 
     train_ds = NutDataset(train_image, train_label)
     valid_ds = NutDataset(valid_image, valid_label)
