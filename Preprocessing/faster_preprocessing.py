@@ -122,8 +122,9 @@ class NutDataset(Dataset):
 
 #image와 label폴더 위치를 주면 일정 비율로 쪼개서 train_image, train_label, valid_image, valid_label
 def copy_split_files(file_list, image_dir, label_dir, out_image_dir, out_label_dir):
-    os.mkdir(out_image_dir)
-    os.mkdir(out_label_dir)
+    print(str(out_image_dir), str(out_label_dir))
+    os.mkdir(str(out_image_dir))
+    os.mkdir(str(out_label_dir))
 
     for f in file_list:
         filename = os.path.splitext(f)[0] + '.jpg'
@@ -156,8 +157,8 @@ def get_nuts_dataloader(image_dir, label_dir):
     valid_image, valid_label을 추출한다!
     앞서 정의한 copy_split_files와 split_json_files를 써먹어서 만듦
     ''' 
-    os.mkdir('C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\train')
-    os.mkdir('C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\valid')
+    os.mkdir(r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\train')
+    os.mkdir(r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\valid')
     train_image = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\train\image' 
     train_label = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\train\label'
     valid_image = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\valid\image'
