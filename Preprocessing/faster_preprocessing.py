@@ -138,15 +138,67 @@ def copy_split_files(file_list, image_dir, label_dir, out_image_dir, out_label_d
             #shutil.copy2(src_lab, os.path.join(out_label_dir, f))
             print(f'{src_lab}를 {os.path.join(out_label_dir, f)}로')
 
-if __name__ == '__main__':
-    image_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\images'
-    label_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\labels'
 
-    out_image_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\sample_image'
-    out_label_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\sample_label'
-
+#Train, Valid => 각 폴더에 맞게 copy_split_files 를 수행!
+def split_json_files(label_dir, ratio=0.8, seed=42):
     file_list = sorted([f for f in os.listdir(label_dir) if f.endswith('.json')])
-    copy_split_files(file_list, image_dir, label_dir, out_image_dir, out_label_dir)
+
+    random.seed(seed)
+    random.shuffle(file_list)
+
+    split = int(len(file_list) * ratio)
+    return file_list[:split], file_list[split:]
+
+
+def get_nuts_dataloader(image_dir, label_dir):
+    ''' 
+    Nuts 이미지와 라벨을 바탕으로, train_image, train_label
+    valid_image, valid_label을 추출한다!
+    앞서 정의한 copy_split_files와 split_json_files를 써먹어서 만듦
+    ''' 
+    os.mkdir('C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\train')
+    os.mkdir('C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\valid')
+    train_image = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\train\image' 
+    train_label = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\train\label'
+    valid_image = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\valid\image'
+    valid_label = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\valid\label' 
+
+    train_files, valid_files = split_json_files(label_dir, ratio=0.8, seed=42)
+
+    copy_split_files(train_files, image_dir, label_dir, train_image, train_label)
+    copy_split_files(valid_files, image_dir, label_dir, valid_image, valid_files)
+
+    train_ds = NutDataset(train_image, train_label)
+    valid_ds = NutDataset(valid_image, valid_label)
+
+    train_loader = DataLoader(train_ds, 
+                              batch_size=2,
+                              shuffle=True,
+                              num_workers=0,
+                              collate_fn=collate_fn)
+
+    valid_loader = DataLoader(valid_ds, 
+                              batch_size=2,
+                              shuffle=True,
+                              num_workers=0,
+                              collate_fn=collate_fn)
+
+    return train_loader, valid_loader
+
+#배치별로 데이터를 묶어줌 -> ObjectDetection에서 하나의 이미지에 여러개의 객체가 있을 때 묶어주는 역할
+#Pytorch model zoo의 faster rcnn쓸 때는 필수
+def collate_fn(batch):
+    return tuple(zip(*batch))
+
+# if __name__ == '__main__':
+#     image_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\images'
+#     label_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\labels'
+
+#     out_image_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\sample_image'
+#     out_label_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\sample_label'
+
+#     file_list = sorted([f for f in os.listdir(label_dir) if f.endswith('.json')])
+#     copy_split_files(file_list, image_dir, label_dir, out_image_dir, out_label_dir)
 
     # trans = None
 
