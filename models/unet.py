@@ -80,6 +80,19 @@ class Unet(nn.Module):
         #최종
         self.head = nn.Conv2d(base_ch, num_classes, kernel_size=1)
 
+    def forward(self, x):
+        s1 = self.enc1(x)
+        s2 = self.enc2(s1)
+        s3 = self.enc3(s2)
+        s4 = self.enc4(s3)
+
+        x = self.bottleneck(s4)
+
+        s5 = self.dec1(x, s4)
+        s6 = self.dec2(s5, s3)
+        s7 = self.dec3(s6, s2)
+        s8 = self.dec4(s7, s1)
+        return self.head(s8)
 
 
 #train
@@ -146,3 +159,37 @@ def evaluate(model, loader, criterion, device, num_classes=16):
     return mean_loss, mean_iou
 
 
+#train_one_epoch, evaluate동시 실행
+def train(model, train_loader, valid_loader,
+          epochs=30, lr=1e-3, device=None,
+          save_path='unet_nuts.pth', num_classes=16):
+
+    if device is None:
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    model.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, mode='min', patience=3, factor=0.5
+    )
+
+    best_iou = 0.0
+
+    for epoch in range(epochs):
+        train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device)
+        val_loss, val_iou = evaluate(model, valid_loader, criterion, device, num_classes)
+        scheduler.step(val_loss)
+
+        print(f"Epoch [{epoch+1}/{epochs}]  "
+              f"train_loss: {train_loss:.4f}  "
+              f"val_loss: {val_loss:.4f}  "
+              f"mIoU: {val_iou:.4f}")
+
+        if val_iou > best_iou:
+            best_iou = val_iou
+            torch.save(model.state_dict(), save_path)
+            print(f"  → 모델 저장 (best mIoU: {best_iou:.4f})")
+
+    print(f"\n훈련 완료. 최고 mIoU: {best_iou:.4f}")

@@ -15,6 +15,10 @@ import albumentations as A
 from torchvision.models.detection import fasterrcnn_resnet50_fpn, FasterRCNN_ResNet50_FPN_Weights
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
+#0818 추가(Unet 관련 모듈)
+from Models.unet import Unet, train
+from Preprocessing.unet_preprocessing import get_dataloader, NUM_CLASSES
+
 def count_params(model):
     #requires_grad = True (훈련시킬것, 변경가능) = Fasle(훈련안시킴, 변경불가)
     #p.numel(파라미터의 구성요소 개수)
@@ -25,23 +29,17 @@ def count_params(model):
     print(f'동결된 파라미터  : {total - trainable:,}')
 
 if __name__ == '__main__':
-    model = fasterrcnn_resnet50_fpn(weights=FasterRCNN_ResNet50_FPN_Weights.DEFAULT)
+    image_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\images'
+    label_dir = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\labels'
 
-    #Faster RCNN
-    #Backbone => 이미지의 특징 추출 => 저수준의 특징 추출(ResNet)
-    #RPN(Resion Proposal Networks) => Bounding Box의 후보 제안 
-    #ROI Head => RPN 를 본 뒤, 분류 수행, bbox 보정**
-    #Faster RCNN : 클래스 = 분류하고자 하는 객체의 개수
-    #ROI Head를 변경
-    #print(model)
+    train_loader, valid_loader = get_dataloader(image_dir, label_dir, 
+                                                image_size=512, batch_size=4)
 
-    in_features = model.roi_heads.box_predictor.cls_score.in_features
-    #ROI Head도 2개의 부속품이 있음 -> Cls_score(분류) / BBox_predictor(바운딩박스 찾기)
-    model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes=1+1)
+    model = Unet(in_channel=3, num_classes=NUM_CLASSES)
+    count_params(model=model)
 
-    count_params(model)
-
-
+    train(model, train_loader=train_loader, valid_loader=valid_loader,
+          epochs=1, lr=1e-3, save_path ='./unet_nuts.pth', num_classes=NUM_CLASSES)
 
 
 
