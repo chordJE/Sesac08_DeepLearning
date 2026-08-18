@@ -119,7 +119,7 @@ class NutsDataset(Dataset):
 
         if random.random() > 0.5:
             image = image.transpose(Image.FLIP_TOP_BOTTOM)
-            mask = np.flipud(mask).reshape
+            mask = np.flipud(mask).copy()
 
         return image, mask
 
@@ -159,16 +159,16 @@ def get_dataloader(image_directory, label_dir, image_size=512, batch_size=4, rat
     return train_dataloader, valid_dataloader
 
 
-if __name__ == '__main__':
-    image_path= r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\images'
-    json_path = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\labels'
+# if __name__ == '__main__':
+#     image_path= r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\images'
+#     json_path = r'C:\Users\jeong\OneDrive\Desktop\Lecture\Data\NutsDataset\labels'
 
-    train_loader, valid_loader = get_dataloader(image_path, json_path, 
-                                                image_size=512,
-                                                batch_size=4)
+#     train_loader, valid_loader = get_dataloader(image_path, json_path, 
+#                                                 image_size=512,
+#                                                 batch_size=4)
 
-    images, labels = next(iter(train_loader))
-    print(f'이미지 셰입 {images.shape}, 라벨 셰입 {labels.shape}')
+#     images, labels = next(iter(train_loader))
+#     print(f'이미지 셰입 {images.shape}, 라벨 셰입 {labels.shape}')
 
     # image = cv2.imread(image_path)
     # image_h, image_w = image.shape[:2]
